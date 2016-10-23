@@ -9,7 +9,17 @@ require 'image_optim_pack'
 module PixelDreamer
   class Image
     include Magick
+    attr_accessor :input
 
+    def initialize(input)
+      @input = input
+      @input_name = name_parser(input)
+      @parent_path = parent_path(input)
+      @sequence_folder = sequence_folder
+      @sequence_frame_path = sequence_frame_path
+      @image_path = image_path
+      @output_folder = output_folder
+    end
 
     ############# Constants ############
 
@@ -113,8 +123,6 @@ module PixelDreamer
       gif(output_name, speed) unless !gif
     end
 
-    private
-
     ##
     # creates a uri by adding the name to common paths and appending .png
     # example: test = uri_helper('desktop', 'test')
@@ -126,20 +134,15 @@ module PixelDreamer
       end
     end
 
+    private
+
     ##
     # creates an instance variable with the name from the file/uri passed
     # example: name_parser('/Users/user/desktop/test.png') => @input_name = 'test'
     # only .png files can be passed
     def name_parser(uri)
       base_uri = uri.dup
-      @input_name = File.basename(base_uri, '.*')
-    end
-
-    ##
-    # creates a uri by adding a directory path, a string and filename extension
-    # example: new_path('/Users/user/desktop/', 'test') => '/Users/user/desktop/test.png'
-    def new_path(path, name)
-      path + name + '.png'
+      File.basename(base_uri, '.*')
     end
 
     ##
@@ -147,15 +150,16 @@ module PixelDreamer
     # example: path('/Users/user/desktop/test.png') => @parent_path = '/Users/user/desktop/'
     # can only be run after the name_parser
     def parent_path(uri)
-      @parent_path = uri.dup
+      parent_path = uri.dup
       length = @input_name.length + 4
-      uri_length = @parent_path.length
+      uri_length = parent_path.length
       start = uri_length - length
-      @parent_path[start..uri_length] = ''
+      parent_path[start..uri_length] = ''
+      parent_path
     end
 
     def output_folder
-      @output_folder = "#{@parent_path}output/#{@input_name}/"
+      "#{@parent_path}output/#{@input_name}/"
     end
 
 
@@ -164,7 +168,7 @@ module PixelDreamer
     # example: output_folder => @sequence_folder = '/Users/user/desktop/output/test/sequence/'
     # can only be run after the name_parser and parent_path
     def sequence_folder
-      @sequence_folder = "#{@parent_path}output/#{@input_name}/sequence/"
+      "#{@parent_path}output/#{@input_name}/sequence/"
     end
 
     ##
@@ -172,7 +176,7 @@ module PixelDreamer
     # example: output_path => @sequence_frame_path = '/Users/user/desktop/output/test/sequence/test.png'
     # can only be run after the name_parser and parent_path
     def sequence_frame_path
-      @sequence_frame_path = "#{@parent_path}output/#{@input_name}/sequence/#{@input_name}.png"
+      "#{@parent_path}output/#{@input_name}/sequence/#{@input_name}.png"
     end
 
     ##
@@ -180,7 +184,7 @@ module PixelDreamer
     # example: image_path => @image_path = '/Users/user/desktop/output/test/test.png'
     # can only be run after the name_parser and parent_path
     def image_path
-      @image_path = "#{@parent_path}output/#{@input_name}/#{@input_name}.png"
+      "#{@parent_path}output/#{@input_name}/#{@input_name}.png"
     end
 
     ##
@@ -203,12 +207,6 @@ module PixelDreamer
     end
 
     def prepare(input)
-      name_parser(input)
-      parent_path(input)
-      sequence_folder
-      sequence_frame_path
-      image_path
-      output_folder
       make_dir?
     end
 
@@ -291,7 +289,6 @@ module PixelDreamer
       data = File.open("#{@parent_path}#{@input_name}.png", 'rb').read(9)
       File.write(f = "#{@parent_path}#{@input_name}.png", File.read(f).gsub(/#{data}/,"\x89PNG\r\n\x1A\n"))
     end
-
 
     ##
     # copies and compresses file passed
