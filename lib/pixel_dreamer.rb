@@ -126,7 +126,7 @@ module PixelDreamer
     ##
     # creates a uri by adding the name to common paths and appending .png
     # example: test = uri_helper('desktop', 'test')
-    def uri_helper(location, file_name)
+    def self.uri_helper(location, file_name)
       if location == 'desktop'
         "/Users/#{ENV['USER']}/desktop/" + file_name + '.png'
       elsif location == 'downloads'
@@ -263,7 +263,7 @@ module PixelDreamer
     ##
     # creates a gif using the @sequence_folder path and outputs gif into the @output_folder path
     # an output_name(string) and a speed(integer) must be passed
-    # speed is used to set the length of time for each frame of the gif, it defaults to millisecondss
+    # speed is used to set the length of time for each frame of the gif, it defaults to milliseconds
     #   - 12 fps: length of frame = 84 ms
     #   - 24 fps: length of frame = 42 ms
     #   - 30 fps: length of frame = 33 ms
@@ -297,7 +297,6 @@ module PixelDreamer
       puts 'Compressing image.'
       image_optim = ImageOptim.new(allow_lossy: true, verbose: false, skip_missing_workers: true, optipng: false,
                                    pngcrush: false, pngquant: {allow_lossy: true}, advpng: false, pngout: false, svgo: false)
-
       File.rename(image_optim.optimize_image(img), @path)
       puts 'Image copied and compressed.'
     end
