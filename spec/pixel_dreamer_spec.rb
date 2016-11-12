@@ -4,7 +4,7 @@ describe PixelDreamer do
   let(:uri) { "/Users/#{ENV['USER']}/desktop/test.png" }
   let(:parent_path) { "/Users/#{ENV['USER']}/desktop/" }
   let(:image) { PixelDreamer::Image.new(uri) }
-  let(:mock_image) { PixelDreamer::Image.new("../support/test.png") }
+  let(:mock_image) { PixelDreamer::Image.new("support/test.png") }
   let(:counter) { 1 }
   let(:counter_2) { 2 }
 
@@ -14,11 +14,11 @@ describe PixelDreamer do
 
   describe :uri_helper do
     it 'returns a full path of a png file on the desktop' do
-      expect(image.uri_helper('desktop', 'test')).to eq(uri)
+      expect(PixelDreamer::Image.uri_helper('desktop', 'test')).to eq(uri)
     end
 
     it 'returns a full path of a png file in the downloads' do
-      expect(image.uri_helper('downloads', 'test')).to eq("/Users/#{ENV['USER']}/downloads/test.png")
+      expect(PixelDreamer::Image.uri_helper('downloads', 'test')).to eq("/Users/#{ENV['USER']}/downloads/test.png")
     end
   end
 
@@ -61,7 +61,7 @@ describe PixelDreamer do
   describe :make_dir? do
     it 'creates the sequence folder director if it does not exist' do
       mock_image.send(:make_dir?)
-      expect(File).to be_directory("../support/output/test/sequence/")
+      expect(File).to be_directory("support/output/test/sequence/")
     end
   end
 
@@ -74,8 +74,9 @@ describe PixelDreamer do
       expect(image.send(:path_choser, counter_2, true, 'test')).to eq("#{parent_path}output/test/test.png")
     end
 
-    # it 'returns the input if compress is true and counter is more than 1' do
-    #   expect(image.send(:path_choser, counter_2, false, 'test')).to eq("uri")
-    # end
+    it 'returns the input if compress is true and counter is more than 1' do
+      test = PixelDreamer::Image.new('support/test.png')
+      expect { test.send(:path_choser, counter_2, false, 'support/test.png')}.not_to raise_error
+    end
   end
 end
