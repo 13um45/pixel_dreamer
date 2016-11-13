@@ -9,12 +9,12 @@ require 'image_optim_pack'
 module PixelDreamer
   class Image
     include Magick
-    attr_accessor :input
+    attr_accessor :image
 
-    def initialize(input)
-      @input = input
-      @input_name = name_parser(input)
-      @parent_path = parent_path(input)
+    def initialize(image)
+      @image = image
+      @input_name = name_parser(image)
+      @parent_path = parent_path(image)
       @sequence_folder = sequence_folder
       @sequence_frame_path = sequence_frame_path
       @image_path = image_path
@@ -40,12 +40,6 @@ module PixelDreamer
                  soft_min: {verbose: true, diagonal: true, max: 6},
                  cinna: {verbose: true, vertical: true, min: 150, max: 300}  }
 
-    DEFAULTS = {reverse: false, vertical: false, diagonal: false,
-                smooth: false, method: 'sum-rgb', verbose: false,
-                min: Float::INFINITY, max: Float::INFINITY,
-                trusted: false, middle: false}
-
-
     SEQUENCE_SETTINGS = { high_long: { counter: 1, max_multiple: 3, increment: 1, break_point: 101 },
                           high_short: { counter: 1, max_multiple: 3, increment: 1, break_point: 31 },
                           high_short_late: { counter: 70, max_multiple: 3, increment: 1, break_point: 101 },
@@ -55,13 +49,34 @@ module PixelDreamer
                           low_short: { counter: 1, max_multiple: 3, increment: 3, break_point: 31 },
                           low_long: { counter: 1, max_multiple: 3, increment: 3, break_point: 101 } }
 
-    def brute_sort_save_with_settings(input, options = {}, output_name = nil, gif = false, output_folder = false)
-      options = DEFAULTS.merge(options)
-      Pxlsrt::Brute.brute(input, reverse: options[:reverse], vertical: options[:vertical],
-                          diagonal: options[:diagonal], smooth: options[:smooth], method: options[:method],
-                          verbose: options[:verbose], min: options[:min], max: options[:max],
-                          trusted: options[:trusted], middle: options[:middle]
-                          ).save(file_name_with_settings(input, options, output_name, gif, output_folder))
+    DEFAULTS = {reverse: false, vertical: false, diagonal: false,
+                smooth: false, method: 'sum-rgb', verbose: false,
+                min: Float::INFINITY, max: Float::INFINITY,
+                trusted: false, middle: false}
+
+    GLITCH_SEQUENCE_DEFAULTS = { settings: SETTINGS[:soft], sequence_settings: SEQUENCE_SETTINGS[:high_short],
+                                 compress: true }
+
+    BARRAGE_DEFAULTS = { gif: false, compress: true, speed: 84 }
+
+    BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS = { settings: {}, output_name: nil, gif: false,
+                                               output_folder: false }
+
+
+    def brute_sort_save_with_settings(options = {})
+      options[:image] ||= @image
+      options = BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS.merge(options)
+      image = options[:image]
+      settings = DEFAULTS.merge(options[:settings])
+      output_name = options[:output_name]
+      gif = options[:gif]
+      output_folder = options[:output_folder]
+
+      Pxlsrt::Brute.brute(image, reverse: settings[:reverse], vertical: settings[:vertical],
+                          diagonal: settings[:diagonal], smooth: settings[:smooth], method: settings[:method],
+                          verbose: settings[:verbose], min: settings[:min], max: settings[:max],
+                          trusted: settings[:trusted], middle: settings[:middle]
+                          ).save(file_name_with_settings(image, settings, output_name, gif, output_folder))
     end
 
     ##
@@ -77,24 +92,34 @@ module PixelDreamer
     # example: glitch_sequence(test, SETTINGS[:side_glitch], 'test')
     # or
     # glitch_sequence(test, SETTINGS[:side_glitch], SEQUENCE_SETTINGS[:high_long],'test')
-    def glitch_sequence(input, setting_hash, settings = SEQUENCE_SETTINGS[:high_short], compress = true, output_name)
-      counter = settings[:counter]
+    def glitch_sequence(options = {})
+      options[:output_name] ||= @input_name
+      options = GLITCH_SEQUENCE_DEFAULTS.merge(options)
+      settings = options[:settings]
+      sequence_settings = options[:sequence_settings]
+      compress = options[:compress]
+      output_name = options[:output_name]
+
+
+      counter = sequence_settings[:counter]
       make_dir?
-      path_chooser(counter, compress, input)
+      path_chooser(counter, compress, image)
 
       if compress
-        compress(input, @path)
+        compress(image, @path)
       end
       puts 'Begin glitch sequence.'
 
       image_number = 1
-      while counter < settings[:break_point]
-        setting_hash[:min] = counter
-        setting_hash[:max] = counter * settings[:max_multiple]
-        brute_sort_save_with_settings(@path, setting_hash, output_name + "_#{image_number}", true, true)
-        puts "IMAGE #{image_number}/#{settings[:break_point] - settings[:counter]} COMPLETE"
+      while counter < sequence_settings[:break_point]
+        settings[:min] = counter
+        settings[:max] = counter * sequence_settings[:max_multiple]
+        { image: image, settings: {}, output_name: nil, gif: false, output_folder: false }
+        brute_sort_save_with_settings({ image: @path, settings: settings, output_name: (output_name + "_#{image_number}"),
+                                       gif: true, output_folder: true })
+        puts "IMAGE #{image_number}/#{sequence_settings[:break_point] - sequence_settings[:counter]} COMPLETE"
         image_number += 1
-        counter += settings[:increment]
+        counter += sequence_settings[:increment]
       end
       gif(output_name, 84)
     end
@@ -110,17 +135,25 @@ module PixelDreamer
     # barrage(test, 'test')
     # or
     # barrage("/Users/user/desktop/test.png", 'test')
-    def barrage(input, output_name, gif = false, compress = true, speed = 84)
+    def barrage(options = {})
+      options[:output_name] ||= @input_name
+      options = BARRAGE_DEFAULTS.merge(options)
+      output_name = options[:output_name]
+      gif = options[:gif]
+      compress = options[:compress]
+      speed = options[:speed]
       counter = 1
       make_dir?
-      path_chooser(counter, compress, input)
+      path_chooser(counter, compress, image)
 
       if compress
-        compress(input, @path)
+        compress(image, @path)
       end
 
       SETTINGS.each do |key, setting_hash|
-        brute_sort_save_with_settings(input, setting_hash, (output_name + "_#{key}"), gif, true)
+
+        brute_sort_save_with_settings({ image: image, settings: setting_hash, output_name: (output_name + "_#{key}"),
+                                        gif: gif, output_folder: true })
         puts "Image #{counter}/#{SETTINGS.length} Complete."
         counter += 1
       end
