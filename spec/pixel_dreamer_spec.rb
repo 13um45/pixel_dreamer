@@ -1,12 +1,18 @@
 require 'spec_helper'
 
 describe PixelDreamer do
+  after :all do
+    FileUtils.remove_dir('support/output')
+  end
   let(:uri) { "/Users/#{ENV['USER']}/desktop/test.png" }
   let(:parent_path) { "/Users/#{ENV['USER']}/desktop/" }
   let(:image) { PixelDreamer::Image.new(uri) }
-  let(:mock_image) { PixelDreamer::Image.new("support/test.png") }
+  let(:mock_image) { PixelDreamer::Image.new('support/test.png') }
   let(:counter) { 1 }
   let(:counter_2) { 2 }
+  let(:output_name) { 'test_output' }
+  let(:options) { PixelDreamer::Image::SETTINGS[:sharp] }
+  let(:base_uri) { 'support/' }
 
   it 'has a version number' do
     expect(PixelDreamer::VERSION).not_to be nil
@@ -67,16 +73,108 @@ describe PixelDreamer do
 
   describe :path_choser do
     it 'returns the sequence_frame_path if compress is true and counter is less than 1' do
-      expect(image.send(:path_choser, counter, true, 'test')).to eq("#{parent_path}output/test/sequence/test.png")
+      expect(image.send(:path_chooser, counter, true, 'test')).to eq("#{parent_path}output/test/sequence/test.png")
     end
 
     it 'returns the image_path if compress is true and counter is more than 1' do
-      expect(image.send(:path_choser, counter_2, true, 'test')).to eq("#{parent_path}output/test/test.png")
+      expect(image.send(:path_chooser, counter_2, true, 'test')).to eq("#{parent_path}output/test/test.png")
     end
 
-    it 'returns the input if compress is true and counter is more than 1' do
+    it 'returns and copies the input if compress is true and counter is more than 1' do
       test = PixelDreamer::Image.new('support/test.png')
-      expect { test.send(:path_choser, counter_2, false, 'support/test.png')}.not_to raise_error
+      test.send(:path_chooser, counter_2, false, 'support/test.png')
+      expect(File).to exist('support/output/test/sequence/test.png')
+    end
+  end
+
+  describe :make_dir? do
+    it 'creates a sequence folder if one does not exist' do
+      test = PixelDreamer::Image.new('support/test.png')
+      test.send(:make_dir?)
+      expect(File.directory?('support/output/test/sequence/')).to be true
+    end
+  end
+
+  describe :output do
+    let(:input_name) { 'test' }
+    let(:sequence_folder) { 'support/output/test/sequence/' }
+    let(:test) { PixelDreamer::Image.new('support/test.png') }
+    subject(:output_gif) { test.send(:output, base_uri, input_name, output_name, options, true, false) }
+    subject(:output) { test.send(:output, base_uri, input_name, output_name, options, false, false) }
+    subject(:output_name_nil) { test.send(:output, base_uri, input_name, nil, options, false, false) }
+
+    context 'when gif is true and output_folder is false' do
+      it 'returns output path of the image in a sequence folder' do
+        expect(output_gif).to eq(sequence_folder + output_name + '.png')
+      end
+
+      it 'creates a text file with settings in a sequence folder' do
+        output_gif
+        expect(File).to exist(sequence_folder + output_name + '.txt')
+      end
+    end
+
+    context 'when both gif and output_folder are false' do
+      it 'returns output path of the image the output folder' do
+        expect(output).to eq(base_uri + 'output/' + output_name + '.png')
+      end
+
+      it 'creates a text file with settings the output folder' do
+        output
+        expect(File).to exist(base_uri + 'output/' + output_name + '.txt')
+      end
+    end
+
+    context 'when the output_name is nil' do
+      it 'returns output path of the image with a random string appended to the name' do
+        expect(output_name_nil).to match(/^support\/output\/test_.+.png$/)
+      end
+    end
+  end
+
+  describe :file_name_with_settings do
+    before do
+      FileUtils.mkdir_p('support/output/test/sequence/')
+    end
+    let(:input_uri) { 'support/test.png' }
+    let(:test) { PixelDreamer::Image.new(input_uri) }
+    subject(:output_with_name) { test.send(:file_name_with_settings, input_uri, options, output_name, false, false ) }
+    subject(:output_name_nil) { test.send(:file_name_with_settings, input_uri, options, nil, false, false ) }
+
+    context 'when output_name exist' do
+      it 'should return the output of the image' do
+        expect(output_with_name).to eq(base_uri + 'output/' + output_name + '.png')
+      end
+    end
+
+    context 'when output_name is nil' do
+      it 'should return the output of the image' do
+        expect(output_name_nil).to match(/^support\/output\/test_.+.png$/)
+      end
+    end
+  end
+
+  describe :gif do
+    before do
+      FileUtils.mkdir_p('support/output/test/sequence/')
+      FileUtils.copy('support/test.png', 'support/output/test/sequence/test_1.png')
+      FileUtils.copy('support/test.png', 'support/output/test/sequence/test_2.png')
+    end
+
+    it 'should create a gif' do
+      mock_image.send(:gif, output_name, 84)
+      expect(File).to exist('support/output/test/test_output.gif')
+    end
+  end
+
+  describe :compress do
+    before do
+      FileUtils.mkdir_p('support/output/test/sequence/')
+    end
+
+    it 'should compress and copy an image' do
+      mock_image.send(:compress, 'support/test.png', 'support/output/test/sequence/comp_test.png' )
+      expect(File).to exist('support/output/test/sequence/comp_test.png')
     end
   end
 end

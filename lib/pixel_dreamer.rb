@@ -79,12 +79,11 @@ module PixelDreamer
     # glitch_sequence(test, SETTINGS[:side_glitch], SEQUENCE_SETTINGS[:high_long],'test')
     def glitch_sequence(input, setting_hash, settings = SEQUENCE_SETTINGS[:high_short], compress = true, output_name)
       counter = settings[:counter]
-      prepare(input)
-      path_choser(counter, compress, input)
-      # convert(input)
+      make_dir?
+      path_chooser(counter, compress, input)
 
       if compress
-        compress(input, counter)
+        compress(input, @path)
       end
       puts 'Begin glitch sequence.'
 
@@ -180,7 +179,8 @@ module PixelDreamer
     end
 
     ##
-    # creates an instance variable with the image path, used when a glitch sequence is created but the original image is not need in said sequence
+    # creates an instance variable with the image path, used when a glitch sequence is created but
+    #   the original image is not need in said sequence
     # example: image_path => @image_path = '/Users/user/desktop/output/test/test.png'
     # can only be run after the name_parser and parent_path
     def image_path
@@ -193,7 +193,7 @@ module PixelDreamer
       FileUtils.mkdir_p(@sequence_folder) unless Dir.exists?(@sequence_folder)
     end
 
-    def path_choser(counter, compress, input)
+    def path_chooser(counter, compress, input)
       if compress
         if counter > 1
           @path = @image_path
@@ -204,10 +204,6 @@ module PixelDreamer
         @path = input
         FileUtils.copy(input, @sequence_frame_path)
       end
-    end
-
-    def prepare(input)
-      make_dir?
     end
 
     ##
@@ -254,9 +250,9 @@ module PixelDreamer
       start = uri_length - length
       base_uri[start..uri_length] = ''
       if output_name.nil?
-        return output(base_uri, input_name, nil, options, gif, output_folder)
+        output(base_uri, input_name, nil, options, gif, output_folder)
       else
-        return output(base_uri, input_name,  output_name, options, gif, output_folder)
+        output(base_uri, input_name, output_name, options, gif, output_folder)
       end
     end
 
@@ -282,22 +278,22 @@ module PixelDreamer
     end
 
     ##
-    # has only been tested not used
-    def convert(img)
-      image = ImageList.new(img)
-      image.write("#{@parent_path}#{@input_name}.png") { self.quality = 10 }
-      data = File.open("#{@parent_path}#{@input_name}.png", 'rb').read(9)
-      File.write(f = "#{@parent_path}#{@input_name}.png", File.read(f).gsub(/#{data}/,"\x89PNG\r\n\x1A\n"))
-    end
+    # does not work needs to be recreated
+    # def convert(img)
+    #   image = ImageList.new(img)
+    #   image.write("#{@parent_path}#{@input_name}.png") { self.quality = 10 }
+    #   data = File.open("#{@parent_path}#{@input_name}.png", 'rb').read(9)
+    #   File.write(f = "#{@parent_path}#{@input_name}.png", File.read(f).gsub(/#{data}/,"\x89PNG\r\n\x1A\n"))
+    # end
 
     ##
     # copies and compresses file passed
     # at the moment can only be used with the glitch_sequence and barrage methods
-    def compress(img, counter = 1)
+    def compress(img, path)
       puts 'Compressing image.'
       image_optim = ImageOptim.new(allow_lossy: true, verbose: false, skip_missing_workers: true, optipng: false,
                                    pngcrush: false, pngquant: {allow_lossy: true}, advpng: false, pngout: false, svgo: false)
-      File.rename(image_optim.optimize_image(img), @path)
+      File.rename(image_optim.optimize_image(img), path)
       puts 'Image copied and compressed.'
     end
   end
