@@ -1,4 +1,4 @@
-require "pixel_dreamer/version"
+require 'pixel_dreamer/version'
 require 'pxlsrt'
 require 'pry'
 require 'rmagick'
@@ -110,10 +110,15 @@ module PixelDreamer
     # barrage(test, 'test')
     # or
     # barrage("/Users/user/desktop/test.png", 'test')
-    def barrage(input, output_name, gif = false, speed = 84)
-      prepare(input)
-      compress(input)
+    def barrage(input, output_name, gif = false, compress = true, speed = 84)
       counter = 1
+      make_dir?
+      path_chooser(counter, compress, input)
+
+      if compress
+        compress(input, @path)
+      end
+
       SETTINGS.each do |key, setting_hash|
         brute_sort_save_with_settings(input, setting_hash, (output_name + "_#{key}"), gif, true)
         puts "Image #{counter}/#{SETTINGS.length} Complete."
@@ -217,28 +222,22 @@ module PixelDreamer
 
       if output_name.nil?
         rando = '_' + (0...4).map{65.+(rand(26)).chr}.join.downcase
-        settings_file = File.new(base_uri + input_name + rando + '.txt', "w")
+        settings_file = File.new(base_uri + input_name + rando + '.txt', 'w')
         settings_file.puts(options.to_s)
         settings_file.close
-        return base_uri +  input_name + rando + '.png'
-
-
+        base_uri +  input_name + rando + '.png'
       elsif gif || output_folder
         @base_uri = base_uri + "#{input_name}/"
         # FileUtils.mkdir_p(@base_uri) unless Dir.exists?(@base_uri)
-        settings_file = File.new(@sequence_folder + output_name + '.txt', "w")
+        settings_file = File.new(@sequence_folder + output_name + '.txt', 'w')
         settings_file.puts(options.to_s)
         settings_file.close
-        return @sequence_folder + output_name + '.png'
-
-
+        @sequence_folder + output_name + '.png'
       elsif !gif && !output_folder
-        settings_file = File.new(base_uri + output_name + '.txt', "w")
+        settings_file = File.new(base_uri + output_name + '.txt', 'w')
         settings_file.puts(options.to_s)
         settings_file.close
-        return base_uri + output_name + '.png'
-
-
+        base_uri + output_name + '.png'
       end
     end
 
