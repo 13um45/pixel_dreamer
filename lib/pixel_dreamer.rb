@@ -55,14 +55,14 @@ module PixelDreamer
                 trusted: false, middle: false}
 
     GLITCH_SEQUENCE_DEFAULTS = { settings: SETTINGS[:soft], sequence_settings: SEQUENCE_SETTINGS[:high_short],
-                                 compress: true }
+                                 compress: true, speed: 84}
 
     BARRAGE_DEFAULTS = { gif: false, compress: true, speed: 84 }
 
     BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS = { settings: {}, output_name: nil, gif: false,
                                                output_folder: false }
 
-
+    # must set gif to false unless barrage or sequence is being used
     def brute_sort_save_with_settings(options = {})
       options[:image] ||= @image
       options = BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS.merge(options)
@@ -99,6 +99,7 @@ module PixelDreamer
       sequence_settings = options[:sequence_settings]
       compress = options[:compress]
       output_name = options[:output_name]
+      speed = options[:speed]
 
 
       counter = sequence_settings[:counter]
@@ -121,7 +122,7 @@ module PixelDreamer
         image_number += 1
         counter += sequence_settings[:increment]
       end
-      gif(output_name, 84)
+      gif(output_name, speed)
     end
 
 
@@ -261,7 +262,8 @@ module PixelDreamer
         base_uri +  input_name + rando + '.png'
       elsif gif || output_folder
         @base_uri = base_uri + "#{input_name}/"
-        # FileUtils.mkdir_p(@base_uri) unless Dir.exists?(@base_uri)
+        # needs to be refactored to create an output folder instead of a sequence folder
+        FileUtils.mkdir_p(@sequence_folder) unless Dir.exists?(@sequence_folder)
         settings_file = File.new(@sequence_folder + output_name + '.txt', 'w')
         settings_file.puts(options.to_s)
         settings_file.close
@@ -304,7 +306,13 @@ module PixelDreamer
       animation.ticks_per_second=1000
       puts 'got images'
       animation.delay = speed
+      ##
+      # delay first image!!!
+      animation.first.delay = 1000
       puts 'creating gif'
+      ##
+      # dither!!!!
+      # a = animation.quantize(number_colors=50, colorspace=RGBColorspace, dither=RiemersmaDitherMethod, tree_depth=0, measure_error=false)
       animation.write("#{@output_folder}#{output_name}.gif")
       puts 'COMPLETE'
     end
