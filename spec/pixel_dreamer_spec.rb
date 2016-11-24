@@ -177,4 +177,36 @@ describe PixelDreamer do
       expect(File).to exist('support/output/test/sequence/comp_test.png')
     end
   end
+
+  describe :brute_sort_save_with_settings do
+    context 'with output_name' do
+      it 'should create a new glitched named with the output_name' do
+        mock_image.brute_sort_save_with_settings({ output_name: 'test_bssws' })
+        expect(File).to exist('support/output/test_bssws.png')
+      end
+    end
+
+    context 'with output_folder' do
+      it 'should create a new file in the output folder' do
+        mock_image.brute_sort_save_with_settings({ output_folder: true, output_name: 'test_bssws' })
+        expect(File).to exist('support/output/test/sequence/test_bssws.png')
+      end
+    end
+  end
+
+  describe :glitch_sequence do
+    # need to test every setting??
+    it 'creates a sequence of glitched images' do
+      # need to figure out how to test how many files are in a folder
+      mock_image.glitch_sequence
+      expect(File).to exist('support/output/test/sequence/test_30.png')
+    end
+  end
+
+  describe :barrage  do
+    it 'creates multiple images from teh sequence_setting hash' do
+      mock_image.barrage
+      expect(File).to exist('support/output/test/sequence/test_soft.png')
+    end
+  end
 end
