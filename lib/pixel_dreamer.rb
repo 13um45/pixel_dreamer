@@ -4,6 +4,7 @@ require 'pry'
 require 'rmagick'
 require 'image_optim'
 require 'image_optim_pack'
+require 'pixel_dreamer/constants'
 
 
 module PixelDreamer
@@ -21,53 +22,12 @@ module PixelDreamer
       @output_folder = output_folder
     end
 
-    ############# Constants ############
-
-    SETTINGS = { sharp: {verbose: true, vertical: true, min:20, max: 60, method: 'uniqueness'},
-                 soft: {verbose: true, vertical: true, min: 100, max: 300},
-                 soft_diagonal: {verbose: true, diagonal: true, min: 100, max: 300},
-                 side_glitch: {verbose: true, vertical: false, min: 40, middle: -1},
-                 side_glitch_soft: {verbose: true, vertical: false, min: 100, max: 300, middle: -1},
-                 side_glitch_erratic: {verbose: true, vertical: false, min: 100, max: 300, middle: -4},
-                 vertical_glitch_soft: {verbose: true, vertical: true, min: 100, max: 300, middle: -1},
-                 soft_unique: {verbose: true, vertical: true, min: 100, max: 300, method: 'uniqueness'},
-                 side_soft_unique: {verbose: true, vertical: false, min: 100, max: 300, method: 'uniqueness'},
-                 side_soft_aggressive: {verbose: true, vertical: false, min: 100, max: 300, method: 'sum-hsb', smooth: true},
-                 side_soft_harsh: {verbose: true, vertical: false, min: 100, max: 300, method: 'hue', smooth: true},
-                 side_soft_sand: {verbose: true, vertical: false, min: 100, max: 300, method: 'random', smooth: true},
-                 side_soft_yellow: {verbose: true, vertical: false, min: 100, max: 300, method: 'yellow', smooth: true},
-                 soft_reverse: {verbose: true, vertical: true, min: 100, max: 300, reverse: true},
-                 soft_min: {verbose: true, diagonal: true, max: 6},
-                 cinna: {verbose: true, vertical: true, min: 150, max: 300}  }
-
-    SEQUENCE_SETTINGS = { high_long: { counter: 1, max_multiple: 3, increment: 1, break_point: 101 },
-                          high_short: { counter: 1, max_multiple: 3, increment: 1, break_point: 31 },
-                          high_short_late: { counter: 70, max_multiple: 3, increment: 1, break_point: 101 },
-                          cinna: { counter: 120, max_multiple: 2, increment: 1, break_point: 151 },
-                          high_short_late_middle: { counter: 45, max_multiple: 3, increment: 1, break_point: 76 },
-                          high_short_early: { counter: 20, max_multiple: 3, increment: 1, break_point: 51 },
-                          low_short: { counter: 1, max_multiple: 3, increment: 3, break_point: 31 },
-                          low_long: { counter: 1, max_multiple: 3, increment: 3, break_point: 101 } }
-
-    DEFAULTS = {reverse: false, vertical: false, diagonal: false,
-                smooth: false, method: 'sum-rgb', verbose: false,
-                min: Float::INFINITY, max: Float::INFINITY,
-                trusted: false, middle: false}
-
-    GLITCH_SEQUENCE_DEFAULTS = { settings: SETTINGS[:soft], sequence_settings: SEQUENCE_SETTINGS[:high_short],
-                                 compress: true, speed: 84}
-
-    BARRAGE_DEFAULTS = { gif: false, compress: true, speed: 84 }
-
-    BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS = { settings: {}, output_name: nil, gif: false,
-                                               output_folder: false }
-
     # must set gif to false unless barrage or sequence is being used
     def brute_sort_save_with_settings(options = {})
       options[:image] ||= @image
-      options = BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS.merge(options)
+      options = Constants::BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS.merge(options)
       image = options[:image]
-      settings = DEFAULTS.merge(options[:settings])
+      settings = Constants::DEFAULTS.merge(options[:settings])
       output_name = options[:output_name]
       gif = options[:gif]
       output_folder = options[:output_folder]
@@ -94,7 +54,7 @@ module PixelDreamer
     # glitch_sequence(test, SETTINGS[:side_glitch], SEQUENCE_SETTINGS[:high_long],'test')
     def glitch_sequence(options = {})
       options[:output_name] ||= @input_name
-      options = GLITCH_SEQUENCE_DEFAULTS.merge(options)
+      options = Constants::GLITCH_SEQUENCE_DEFAULTS.merge(options)
       settings = options[:settings]
       sequence_settings = options[:sequence_settings]
       compress = options[:compress]
@@ -138,7 +98,7 @@ module PixelDreamer
     # barrage("/Users/user/desktop/test.png", 'test')
     def barrage(options = {})
       options[:output_name] ||= @input_name
-      options = BARRAGE_DEFAULTS.merge(options)
+      options = Constants::BARRAGE_DEFAULTS.merge(options)
       output_name = options[:output_name]
       gif = options[:gif]
       compress = options[:compress]
@@ -151,11 +111,11 @@ module PixelDreamer
         compress(image, @path)
       end
 
-      SETTINGS.each do |key, setting_hash|
+      Constants::SETTINGS.each do |key, setting_hash|
 
         brute_sort_save_with_settings({ image: image, settings: setting_hash, output_name: (output_name + "_#{key}"),
                                         gif: gif, output_folder: true })
-        puts "Image #{counter}/#{SETTINGS.length} Complete."
+        puts "Image #{counter}/#{Constants::SETTINGS.length} Complete."
         counter += 1
       end
       gif(output_name, speed) unless !gif

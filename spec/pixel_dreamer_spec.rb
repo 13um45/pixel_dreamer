@@ -11,7 +11,7 @@ describe PixelDreamer do
   let(:counter) { 1 }
   let(:counter_2) { 2 }
   let(:output_name) { 'test_output' }
-  let(:options) { PixelDreamer::Image::SETTINGS[:sharp] }
+  let(:options) { PixelDreamer::Constants::SETTINGS[:sharp] }
   let(:base_uri) { 'support/' }
 
   it 'has a version number' do
