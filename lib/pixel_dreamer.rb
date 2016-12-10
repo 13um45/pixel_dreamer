@@ -1,6 +1,5 @@
 require 'pixel_dreamer/version'
 require 'pxlsrt'
-require 'pry'
 require 'rmagick'
 require 'image_optim'
 require 'image_optim_pack'
