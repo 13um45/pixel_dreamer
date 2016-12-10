@@ -73,16 +73,16 @@ describe PixelDreamer do
 
   describe :path_choser do
     it 'returns the sequence_frame_path if compress is true and counter is less than 1' do
-      expect(image.send(:path_chooser, counter, true, 'test')).to eq("#{parent_path}output/test/sequence/test.png")
+      expect(image.send(:path_selector, counter, true, 'test')).to eq("#{parent_path}output/test/sequence/test.png")
     end
 
     it 'returns the image_path if compress is true and counter is more than 1' do
-      expect(image.send(:path_chooser, counter_2, true, 'test')).to eq("#{parent_path}output/test/test.png")
+      expect(image.send(:path_selector, counter_2, true, 'test')).to eq("#{parent_path}output/test/test.png")
     end
 
     it 'returns and copies the input if compress is true and counter is more than 1' do
       test = PixelDreamer::Image.new('support/test.png')
-      test.send(:path_chooser, counter_2, false, 'support/test.png')
+      test.send(:path_selector, counter_2, false, 'support/test.png')
       expect(File).to exist('support/output/test/sequence/test.png')
     end
   end
@@ -162,7 +162,7 @@ describe PixelDreamer do
     end
 
     it 'should create a gif' do
-      mock_image.send(:gif, output_name, 84)
+      mock_image.gif({output_name: output_name})
       expect(File).to exist('support/output/test/test_output.gif')
     end
   end
@@ -173,7 +173,7 @@ describe PixelDreamer do
     end
 
     it 'should compress and copy an image' do
-      mock_image.send(:compress, 'support/test.png', 'support/output/test/sequence/comp_test.png' )
+      mock_image.compress('support/test.png', 'support/output/test/sequence/comp_test.png')
       expect(File).to exist('support/output/test/sequence/comp_test.png')
     end
   end

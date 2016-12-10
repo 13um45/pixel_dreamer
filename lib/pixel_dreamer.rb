@@ -56,32 +56,22 @@ module PixelDreamer
       options = Constants::GLITCH_SEQUENCE_DEFAULTS.merge(options)
       settings = options[:settings]
       sequence_settings = options[:sequence_settings]
-      compress = options[:compress]
       output_name = options[:output_name]
-      speed = options[:speed]
-
-
       counter = sequence_settings[:counter]
-      make_dir?
-      path_chooser(counter, compress, image)
-
-      if compress
-        compress(image, @path)
-      end
+      prepare(counter, options[:compress])
       puts 'Begin glitch sequence.'
 
       image_number = 1
       while counter < sequence_settings[:break_point]
         settings[:min] = counter
         settings[:max] = counter * sequence_settings[:max_multiple]
-        { image: image, settings: {}, output_name: nil, gif: false, output_folder: false }
         brute_sort_save_with_settings({ image: @path, settings: settings, output_name: (output_name + "_#{image_number}"),
                                        gif: true, output_folder: true })
         puts "IMAGE #{image_number}/#{sequence_settings[:break_point] - sequence_settings[:counter]} COMPLETE"
         image_number += 1
         counter += sequence_settings[:increment]
       end
-      gif(output_name, speed)
+      gif(options)
     end
 
 
@@ -100,38 +90,78 @@ module PixelDreamer
       options = Constants::BARRAGE_DEFAULTS.merge(options)
       output_name = options[:output_name]
       gif = options[:gif]
-      compress = options[:compress]
-      speed = options[:speed]
       counter = 1
-      make_dir?
-      path_chooser(counter, compress, image)
-
-      if compress
-        compress(image, @path)
-      end
+      prepare(counter, options[:compress])
+      puts 'Begin barrage.'
 
       Constants::SETTINGS.each do |key, setting_hash|
-
         brute_sort_save_with_settings({ image: image, settings: setting_hash, output_name: (output_name + "_#{key}"),
                                         gif: gif, output_folder: true })
-        puts "Image #{counter}/#{Constants::SETTINGS.length} Complete."
+        puts "Image #{counter}/#{Constants::SETTINGS.length} complete."
         counter += 1
       end
-      gif(output_name, speed) unless !gif
+      gif(options) if gif
+    end
+
+    ##
+    # copies and compresses file passed
+    def compress(img, path)
+      puts 'Compressing image.'
+      image_optim = ImageOptim.new(allow_lossy: true, verbose: false, skip_missing_workers: true, optipng: false,
+                                   pngcrush: false, pngquant: {allow_lossy: true}, advpng: false, pngout: false, svgo: false)
+      File.rename(image_optim.optimize_image(img), path)
+      puts 'Image copied and compressed.'
+    end
+
+    ##
+    # creates a gif using the @sequence_folder path and outputs gif into the @output_folder path
+    # an output_name(string) and a speed(integer) must be passed
+    # speed is used to set the length of time for each frame of the gif, it defaults to milliseconds
+    #   - 12 fps: length of frame = 84 ms
+    #   - 24 fps: length of frame = 42 ms
+    #   - 30 fps: length of frame = 33 ms
+    #   - 60 fps: length of frame = 17 ms
+    # example: gif(test, 84) => creates a gif at 12fps
+    # at the moment, must be used with the glitch_sequence and barrage methods
+    #
+    def gif(options = {})
+      options[:output_name] ||= @input_name
+      options = Constants::GIF_DEFAULTS.merge(options)
+      options[:image_delay] = Constants::IMAGE_DELAY_DEFAULTS.merge(options[:image_delay])
+      options[:dither] = Constants::DITHER_DEFAULTS.merge(options[:dither])
+      image_delay = options[:image_delay]
+      dither = options[:dither]
+      animation = ImageList.new(*Dir["#{@sequence_folder}*.png"].sort_by { |x| x[/\d+/].to_i })
+      animation.ticks_per_second=1000
+      puts 'Got images.'
+      animation.delay = options[:speed]
+      animation[(image_delay[:image_to_delay] - 1)].delay = image_delay[:delay_length] if image_delay[:active]
+      puts 'Creating GIF.'
+      animation = dither(animation, dither[:number_of_colors]) if dither[:active]
+      animation.write("#{@output_folder}#{options[:output_name]}.gif")
+      puts 'Complete.'
     end
 
     ##
     # creates a uri by adding the name to common paths and appending .png
     # example: test = uri_helper('desktop', 'test')
     def self.uri_helper(location, file_name)
-      if location == 'desktop'
-        "/Users/#{ENV['USER']}/desktop/" + file_name + '.png'
-      elsif location == 'downloads'
-        "/Users/#{ENV['USER']}/downloads/" + file_name + '.png'
-      end
+        "/Users/#{ENV['USER']}/#{location}/" + file_name + '.png'
     end
 
     private
+
+    def dither(animation, number_of_colors)
+        animation.quantize(number_colors=number_of_colors,
+                           colorspace=RGBColorspace, dither=RiemersmaDitherMethod,
+                           tree_depth=0, measure_error=false)
+    end
+
+    def prepare(counter, compress)
+      make_dir?
+      path_selector(counter, compress, image)
+      compress(image, @path) if compress
+    end
 
     ##
     # creates an instance variable with the name from the file/uri passed
@@ -191,7 +221,7 @@ module PixelDreamer
       FileUtils.mkdir_p(@sequence_folder) unless Dir.exists?(@sequence_folder)
     end
 
-    def path_chooser(counter, compress, input)
+    def path_selector(counter, compress, input)
       if compress
         if counter > 1
           @path = @image_path
@@ -250,33 +280,6 @@ module PixelDreamer
     end
 
     ##
-    # creates a gif using the @sequence_folder path and outputs gif into the @output_folder path
-    # an output_name(string) and a speed(integer) must be passed
-    # speed is used to set the length of time for each frame of the gif, it defaults to milliseconds
-    #   - 12 fps: length of frame = 84 ms
-    #   - 24 fps: length of frame = 42 ms
-    #   - 30 fps: length of frame = 33 ms
-    #   - 60 fps: length of frame = 17 ms
-    # example: gif(test, 84) => creates a gif at 12fps
-    # at the moment, must be used with the glitch_sequence and barrage methods
-    #
-    def gif(output_name, speed)
-      animation = ImageList.new(*Dir["#{@sequence_folder}*.png"].sort_by { |x| x[/\d+/].to_i })
-      animation.ticks_per_second=1000
-      puts 'got images'
-      animation.delay = speed
-      ##
-      # delay first image!!!
-      animation.first.delay = 1000
-      puts 'creating gif'
-      ##
-      # dither!!!!
-      # a = animation.quantize(number_colors=50, colorspace=RGBColorspace, dither=RiemersmaDitherMethod, tree_depth=0, measure_error=false)
-      animation.write("#{@output_folder}#{output_name}.gif")
-      puts 'COMPLETE'
-    end
-
-    ##
     # does not work needs to be recreated
     # def convert(img)
     #   image = ImageList.new(img)
@@ -284,16 +287,5 @@ module PixelDreamer
     #   data = File.open("#{@parent_path}#{@input_name}.png", 'rb').read(9)
     #   File.write(f = "#{@parent_path}#{@input_name}.png", File.read(f).gsub(/#{data}/,"\x89PNG\r\n\x1A\n"))
     # end
-
-    ##
-    # copies and compresses file passed
-    # at the moment can only be used with the glitch_sequence and barrage methods
-    def compress(img, path)
-      puts 'Compressing image.'
-      image_optim = ImageOptim.new(allow_lossy: true, verbose: false, skip_missing_workers: true, optipng: false,
-                                   pngcrush: false, pngquant: {allow_lossy: true}, advpng: false, pngout: false, svgo: false)
-      File.rename(image_optim.optimize_image(img), path)
-      puts 'Image copied and compressed.'
-    end
   end
 end
