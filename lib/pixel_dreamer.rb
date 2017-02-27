@@ -5,6 +5,12 @@ require 'image_optim'
 require 'image_optim_pack'
 require 'pixel_dreamer/constants'
 
+##
+# to use pixel dreamer you must first create a new PixelDreamer::Image class
+# to do this you must pass in the uri of the image you will be pixel sorting
+# example: image = PixelDreamer::Image.new('/uri/image.png')
+# now you can use the instance methods
+
 
 module PixelDreamer
   class Image
@@ -21,7 +27,11 @@ module PixelDreamer
       @output_folder = output_folder
     end
 
-    # must set gif to false unless barrage or sequence is being used
+    # pixel sorts on image
+    # by default blah blah blah
+    # to lazy to write the documentation rn
+    # read the documentation from the other methods to get an idea
+    # also read the documentation for pxlsrt
     def brute_sort_save_with_settings(options = {})
       options[:image] ||= @image
       options = Constants::BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS.merge(options)
@@ -35,22 +45,26 @@ module PixelDreamer
                           diagonal: settings[:diagonal], smooth: settings[:smooth], method: settings[:method],
                           verbose: settings[:verbose], min: settings[:min], max: settings[:max],
                           trusted: settings[:trusted], middle: settings[:middle]
-                          ).save(file_name_with_settings(image, settings, output_name, gif, output_folder))
+      ).save(file_name_with_settings(image, settings, output_name, gif, output_folder))
     end
 
     ##
     # creates a sequence of pixel sorted images based on the setting hash and a sequence_setting hash chosen
-    # an input(string), settings_hash(hash), settings(hash), compress(boolean), output_name(string)
-    # the input must be the full path of the file
-    # the settings_hash can be pulled from the SETTINGS
-    # the settings must be pulled from the SEQUENCE_SETTINGS, defaults to SEQUENCE_SETTINGS[:high_short]
-    # compress defaults to true, copies and compresses input file and creates sequence from compressed file
+    # once the image has been instantiated you can run this method without passing in any parameters
+    # by default it is executed with these settings:
+    # settings: SETTINGS[:soft], sequence_settings: SEQUENCE_SETTINGS[:high_short], compress: true, speed: 84
+    # example: image.glitch_sequence
+    # or with parameters, an output name can be passed in as well (string)
+    # image.glitch_sequence({ settings: SETTINGS[:sharp], sequence_settings: SEQUENCE_SETTINGS[:high_long],
+    #                         compress: false, speed: 42, output_name: 'image_glitched' })
     # the output name must only include the name of the output image not the file extension
-    # the uri_helper can be used to create the input uri
-    # defaults to the :high_short sequence setting
-    # example: glitch_sequence(test, SETTINGS[:side_glitch], 'test')
-    # or
-    # glitch_sequence(test, SETTINGS[:side_glitch], SEQUENCE_SETTINGS[:high_long],'test')
+    # this creates a sequence of of images that have been pixel sorted in with increments specified
+    #
+    # the settings_hash can be pulled from the SETTINGS, defaults to SETTINGS[:soft]
+    # the sequence_settings cans be pulled from the SEQUENCE_SETTINGS, defaults to SEQUENCE_SETTINGS[:high_short]
+    # compress defaults to true, copies and compresses input file and creates sequence from compressed file
+    # the fps is set by the speed which is in milliseconds, defaults to 84ms (12fps)
+    # the uri_helper method can be used to create the input uri
     def glitch_sequence(options = {})
       options[:output_name] ||= @input_name
       options = Constants::GLITCH_SEQUENCE_DEFAULTS.merge(options)
@@ -65,8 +79,8 @@ module PixelDreamer
       while counter < sequence_settings[:break_point]
         settings[:min] = counter
         settings[:max] = counter * sequence_settings[:max_multiple]
-        brute_sort_save_with_settings({ image: @path, settings: settings, output_name: (output_name + "_#{image_number}"),
-                                       gif: true, output_folder: true })
+        brute_sort_save_with_settings({image: @path, settings: settings, output_name: (output_name + "_#{image_number}"),
+                                       gif: true, output_folder: true})
         puts "IMAGE #{image_number}/#{sequence_settings[:break_point] - sequence_settings[:counter]} COMPLETE"
         image_number += 1
         counter += sequence_settings[:increment]
@@ -78,13 +92,17 @@ module PixelDreamer
     ##
     # creates an image for each setting from the settings hash
     # quickest way to see how all of the settings effect the image supplied
-    # an input uri(string) and an output_name(string) must be provided
+    # once the image has been instantiated you can run this method without passing in any parameters
+    # by default it is executed with these settings:
+    # gif: false, compress: true, speed: 84
+    #
+    # example: image.barrage
+    # or with parameters, an output name (string) can be passed in as well
+    # image.barrage({ gif: true, compress: false, speed: 42, output_name: 'image_glitched' })
+    #
     # the output name must only include the name of the output image not the file extension
     # the uri_helper can be used to create the input uri
     # example using the uri_helper:
-    # barrage(test, 'test')
-    # or
-    # barrage("/Users/user/desktop/test.png", 'test')
     def barrage(options = {})
       options[:output_name] ||= @input_name
       options = Constants::BARRAGE_DEFAULTS.merge(options)
@@ -95,8 +113,8 @@ module PixelDreamer
       puts 'Begin barrage.'
 
       Constants::SETTINGS.each do |key, setting_hash|
-        brute_sort_save_with_settings({ image: image, settings: setting_hash, output_name: (output_name + "_#{key}"),
-                                        gif: gif, output_folder: true })
+        brute_sort_save_with_settings({image: image, settings: setting_hash, output_name: (output_name + "_#{key}"),
+                                       gif: gif, output_folder: true})
         puts "Image #{counter}/#{Constants::SETTINGS.length} complete."
         counter += 1
       end
@@ -104,7 +122,33 @@ module PixelDreamer
     end
 
     ##
+    # creates a series of images that are pixel sorted with randomized settings
+    # the output is very hectic
+    # once the image has been instantiated you can run this method without passing in any parameters
+    # by default it is executed with these settings:
+    # gif: false, compress: true, speed: 84, image_number: 10
+    #
+    # example: image.randomize
+    # or with parameters, an output name (string) can be passed in as well
+    # image.randomize({ gif: trues, compress: false, speed: 42, image_number: 20, output_name: 'image_glitched' })
+    #
+    # the output name must only include the name of the output image not the file extension
+    # the amount of images that are created are based on the image_number (integer)
+    def randomize(options = {})
+      options[:output_name] ||= @input_name
+      options = Constants::RANDOMIZE_DEFAULTS.merge(options)
+      prepare(1, options[:compress])
+      puts 'Being randomizing.'
+
+      options[:image_number].times do
+        brute_sort_save_with_settings({image: image, settings: randomize_settings, output_name: (options[:output_name] + random_name),
+                                       gif: options[:gif], output_folder: true})
+      end
+    end
+
+    ##
     # copies and compresses file passed
+    # cannot compress b&w images
     def compress(img, path)
       puts 'Compressing image.'
       image_optim = ImageOptim.new(allow_lossy: true, verbose: false, skip_missing_workers: true, optipng: false,
@@ -115,15 +159,24 @@ module PixelDreamer
 
     ##
     # creates a gif using the @sequence_folder path and outputs gif into the @output_folder path
-    # an output_name(string) and a speed(integer) must be passed
+    # once the image has been instantiated you can run this method without passing in any parameters
+    # by default it is executed with these settings:
+    # speed: 84, dither: DITHER_DEFAULTS, image_delay: IMAGE_DELAY_DEFAULTS
+    #
+    # example: image.gif
+    # or with parameters, an output name (string) can be passed in as well
+    # image.gif({speed: 42, dither: DITHER_DEFAULTS, image_delay: IMAGE_DELAY_DEFAULTS, output_name: 'image_gif'})
+    #
+    # or image.gif({speed: 42, dither: {active: false, number_of_colors: 200},
+    #                image_delay: {active: false, image_to_delay: 1, delay_length: 1000}, output_name: 'image_gif'})
+    #
     # speed is used to set the length of time for each frame of the gif, it defaults to milliseconds
     #   - 12 fps: length of frame = 84 ms
     #   - 24 fps: length of frame = 42 ms
     #   - 30 fps: length of frame = 33 ms
     #   - 60 fps: length of frame = 17 ms
-    # example: gif(test, 84) => creates a gif at 12fps
-    # at the moment, must be used with the glitch_sequence and barrage methods
-    #
+    # the dither hash used to set the dither settings
+    # the image_delay hash is used to pause the sequence on an image for a set amount of time
     def gif(options = {})
       options[:output_name] ||= @input_name
       options = Constants::GIF_DEFAULTS.merge(options)
@@ -146,15 +199,27 @@ module PixelDreamer
     # creates a uri by adding the name to common paths and appending .png
     # example: test = uri_helper('desktop', 'test')
     def self.uri_helper(location, file_name)
-        "/Users/#{ENV['USER']}/#{location}/" + file_name + '.png'
+      "/Users/#{ENV['USER']}/#{location}/" + file_name + '.png'
     end
 
     private
+    def randomize_settings
+      hash = {}
+      Constants::RANDOMIZE_SETTINGS.each do |key, setting|
+        setting.sample
+        hash[key] = setting.sample
+      end
+      hash
+    end
+
+    def random_name
+      '_' + (0...4).map { 65.+(rand(26)).chr }.join.downcase
+    end
 
     def dither(animation, number_of_colors)
-        animation.quantize(number_colors=number_of_colors,
-                           colorspace=RGBColorspace, dither=RiemersmaDitherMethod,
-                           tree_depth=0, measure_error=false)
+      animation.quantize(number_colors=number_of_colors,
+                         colorspace=RGBColorspace, dither=RiemersmaDitherMethod,
+                         tree_depth=0, measure_error=false)
     end
 
     def prepare(counter, compress)
@@ -244,11 +309,11 @@ module PixelDreamer
       end
 
       if output_name.nil?
-        rando = '_' + (0...4).map{65.+(rand(26)).chr}.join.downcase
+        rando = '_' + (0...4).map { 65.+(rand(26)).chr }.join.downcase
         settings_file = File.new(base_uri + input_name + rando + '.txt', 'w')
         settings_file.puts(options.to_s)
         settings_file.close
-        base_uri +  input_name + rando + '.png'
+        base_uri + input_name + rando + '.png'
       elsif gif || output_folder
         @base_uri = base_uri + "#{input_name}/"
         # needs to be refactored to create an output folder instead of a sequence folder
