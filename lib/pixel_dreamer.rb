@@ -13,18 +13,29 @@ require 'pixel_dreamer/constants'
 
 
 module PixelDreamer
-  class Image
+  class ImageDreamer
     include Magick
     attr_accessor :image
 
     def initialize(image)
-      @image = image
+
+      @image = prepare_image(image)
       @input_name = name_parser(image)
       @parent_path = parent_path(image)
       @sequence_folder = sequence_folder
       @sequence_frame_path = sequence_frame_path
       @image_path = image_path
       @output_folder = output_folder
+    end
+
+    ##
+    # converts image to png
+    def convert_to_png(image_uri)
+      path_without_ext = File.join(File.dirname(image_uri), File.basename(image_uri, '.*'))
+      end_image = path_without_ext + '.png'
+      image = Image.read(image_uri).first
+      image.write(end_image)
+      end_image
     end
 
     # pixel sorts on image
@@ -79,8 +90,8 @@ module PixelDreamer
       while counter < sequence_settings[:break_point]
         settings[:min] = counter
         settings[:max] = counter * sequence_settings[:max_multiple]
-        brute_sort_save_with_settings({image: @path, settings: settings, output_name: (output_name + "_#{image_number}"),
-                                       gif: true, output_folder: true})
+        brute_sort_save_with_settings(image: @path, settings: settings, output_name: (output_name + "_#{image_number}"),
+                                       gif: true, output_folder: true)
         puts "IMAGE #{image_number}/#{sequence_settings[:break_point] - sequence_settings[:counter]} COMPLETE"
         image_number += 1
         counter += sequence_settings[:increment]
@@ -113,8 +124,8 @@ module PixelDreamer
       puts 'Begin barrage.'
 
       Constants::SETTINGS.each do |key, setting_hash|
-        brute_sort_save_with_settings({image: image, settings: setting_hash, output_name: (output_name + "_#{key}"),
-                                       gif: gif, output_folder: true})
+        brute_sort_save_with_settings(image: image, settings: setting_hash, output_name: (output_name + "_#{key}"),
+                                       gif: gif, output_folder: true)
         puts "Image #{counter}/#{Constants::SETTINGS.length} complete."
         counter += 1
       end
@@ -141,8 +152,8 @@ module PixelDreamer
       puts 'Being randomizing.'
 
       options[:image_number].times do
-        brute_sort_save_with_settings({image: image, settings: randomize_settings, output_name: (options[:output_name] + random_name),
-                                       gif: options[:gif], output_folder: true})
+        brute_sort_save_with_settings(image: image, settings: randomize_settings, output_name: (options[:output_name] + random_name),
+                                       gif: options[:gif], output_folder: true)
       end
     end
 
@@ -152,7 +163,8 @@ module PixelDreamer
     def compress(img, path)
       puts 'Compressing image.'
       image_optim = ImageOptim.new(allow_lossy: true, verbose: false, skip_missing_workers: true, optipng: false,
-                                   pngcrush: false, pngquant: {allow_lossy: true}, advpng: false, pngout: false, svgo: false)
+                                   pngcrush: false, pngquant: { allow_lossy: true },
+                                   advpng: false, pngout: false, svgo: false)
       File.rename(image_optim.optimize_image(img), path)
       puts 'Image copied and compressed.'
     end
@@ -196,13 +208,30 @@ module PixelDreamer
     end
 
     ##
-    # creates a uri by adding the name to common paths and appending .png
-    # example: test = uri_helper('desktop', 'test')
+    # creates a uri by adding the name to common paths
+    # example: test = uri_helper('desktop', 'test.png')
     def self.uri_helper(location, file_name)
-      "/Users/#{ENV['USER']}/#{location}/" + file_name + '.png'
+      "/Users/#{ENV['USER']}/#{location}/" + file_name
     end
 
     private
+
+    ##
+    # checks if image is png, if it is, returns the uri passed else it converts to png
+    def prepare_image(image_uri)
+      if image_png?(image_uri)
+        image_uri
+      else
+        convert_to_png(image_uri)
+      end
+    end
+
+    ##
+    # check if image is png
+    def image_png?(image_uri)
+      File.extname(image_uri) == '.png'
+    end
+
     def randomize_settings
       hash = {}
       Constants::RANDOMIZE_SETTINGS.each do |key, setting|
@@ -283,7 +312,7 @@ module PixelDreamer
     ##
     # creates directory using @sequence_folder for the output for either the glitch_sequence or barrage methods
     def make_dir?
-      FileUtils.mkdir_p(@sequence_folder) unless Dir.exists?(@sequence_folder)
+      FileUtils.mkdir_p(@sequence_folder) unless Dir.exist?(@sequence_folder)
     end
 
     def path_selector(counter, compress, input)
@@ -305,7 +334,7 @@ module PixelDreamer
       base_uri = base_uri + 'output/'
       if gif
       else
-        Dir.mkdir(base_uri) unless Dir.exists?(base_uri)
+        Dir.mkdir(base_uri) unless Dir.exist?(base_uri)
       end
 
       if output_name.nil?
@@ -317,7 +346,7 @@ module PixelDreamer
       elsif gif || output_folder
         @base_uri = base_uri + "#{input_name}/"
         # needs to be refactored to create an output folder instead of a sequence folder
-        FileUtils.mkdir_p(@sequence_folder) unless Dir.exists?(@sequence_folder)
+        FileUtils.mkdir_p(@sequence_folder) unless Dir.exist?(@sequence_folder)
         settings_file = File.new(@sequence_folder + output_name + '.txt', 'w')
         settings_file.puts(options.to_s)
         settings_file.close

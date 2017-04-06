@@ -6,8 +6,8 @@ describe PixelDreamer do
   end
   let(:uri) { "/Users/#{ENV['USER']}/desktop/test.png" }
   let(:parent_path) { "/Users/#{ENV['USER']}/desktop/" }
-  let(:image) { PixelDreamer::Image.new(uri) }
-  let(:mock_image) { PixelDreamer::Image.new('support/test.png') }
+  let(:image) { PixelDreamer::ImageDreamer.new(uri) }
+  let(:mock_image) { PixelDreamer::ImageDreamer.new('support/test.png') }
   let(:counter) { 1 }
   let(:counter_2) { 2 }
   let(:output_name) { 'test_output' }
@@ -20,11 +20,11 @@ describe PixelDreamer do
 
   describe :uri_helper do
     it 'returns a full path of a png file on the desktop' do
-      expect(PixelDreamer::Image.uri_helper('desktop', 'test')).to eq(uri)
+      expect(PixelDreamer::ImageDreamer.uri_helper('desktop', 'test.png')).to eq(uri)
     end
 
     it 'returns a full path of a png file in the downloads' do
-      expect(PixelDreamer::Image.uri_helper('downloads', 'test')).to eq("/Users/#{ENV['USER']}/downloads/test.png")
+      expect(PixelDreamer::ImageDreamer.uri_helper('downloads', 'test.png')).to eq("/Users/#{ENV['USER']}/downloads/test.png")
     end
   end
 
@@ -81,7 +81,7 @@ describe PixelDreamer do
     end
 
     it 'returns and copies the input if compress is true and counter is more than 1' do
-      test = PixelDreamer::Image.new('support/test.png')
+      test = PixelDreamer::ImageDreamer.new('support/test.png')
       test.send(:path_selector, counter_2, false, 'support/test.png')
       expect(File).to exist('support/output/test/sequence/test.png')
     end
@@ -89,7 +89,7 @@ describe PixelDreamer do
 
   describe :make_dir? do
     it 'creates a sequence folder if one does not exist' do
-      test = PixelDreamer::Image.new('support/test.png')
+      test = PixelDreamer::ImageDreamer.new('support/test.png')
       test.send(:make_dir?)
       expect(File.directory?('support/output/test/sequence/')).to be true
     end
@@ -98,7 +98,7 @@ describe PixelDreamer do
   describe :output do
     let(:input_name) { 'test' }
     let(:sequence_folder) { 'support/output/test/sequence/' }
-    let(:test) { PixelDreamer::Image.new('support/test.png') }
+    let(:test) { PixelDreamer::ImageDreamer.new('support/test.png') }
     subject(:output_gif) { test.send(:output, base_uri, input_name, output_name, options, true, false) }
     subject(:output) { test.send(:output, base_uri, input_name, output_name, options, false, false) }
     subject(:output_name_nil) { test.send(:output, base_uri, input_name, nil, options, false, false) }
@@ -137,7 +137,7 @@ describe PixelDreamer do
       FileUtils.mkdir_p('support/output/test/sequence/')
     end
     let(:input_uri) { 'support/test.png' }
-    let(:test) { PixelDreamer::Image.new(input_uri) }
+    let(:test) { PixelDreamer::ImageDreamer.new(input_uri) }
     subject(:output_with_name) { test.send(:file_name_with_settings, input_uri, options, output_name, false, false ) }
     subject(:output_name_nil) { test.send(:file_name_with_settings, input_uri, options, nil, false, false ) }
 
