@@ -10,6 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["christian.leumas@icloud.com"]
 
   spec.summary       = %q{A wrapper for pxlsrt, adds settings and gif creation.}
+  spec.description   = %q{Create pixel sorted gifs.}
   spec.homepage      = "https://github.com/13um45/pixel_dreamer"
   spec.license       = "MIT"
 
