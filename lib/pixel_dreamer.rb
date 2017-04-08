@@ -6,20 +6,22 @@ require 'image_optim_pack'
 require 'pixel_dreamer/constants'
 
 ##
-# to use pixel dreamer you must first create a new PixelDreamer::Image class
+# to use pixel dreamer you must first create a new PixelDreamer::ImageDreamer class
 # to do this you must pass in the uri of the image you will be pixel sorting
-# example: image = PixelDreamer::Image.new('/uri/image.png')
+# example: image = PixelDreamer::ImageDreamer.new('/uri/image.png')
+# you can also pass in an image overlay on top of the image that is outputs
 # now you can use the instance methods
 
 
 module PixelDreamer
   class ImageDreamer
     include Magick
-    attr_accessor :image
+    attr_accessor :image, :overlay_image
 
-    def initialize(image)
+    def initialize(image, overlay_image = nil)
 
       @image = prepare_image(image)
+      @overlay_image = overlay_image
       @input_name = name_parser(image)
       @parent_path = parent_path(image)
       @sequence_folder = sequence_folder
@@ -52,11 +54,18 @@ module PixelDreamer
       gif = options[:gif]
       output_folder = options[:output_folder]
 
-      Pxlsrt::Brute.brute(image, reverse: settings[:reverse], vertical: settings[:vertical],
-                          diagonal: settings[:diagonal], smooth: settings[:smooth], method: settings[:method],
-                          verbose: settings[:verbose], min: settings[:min], max: settings[:max],
-                          trusted: settings[:trusted], middle: settings[:middle]
+      f = Pxlsrt::Brute.brute(image, reverse: settings[:reverse], vertical: settings[:vertical],
+                              diagonal: settings[:diagonal], smooth: settings[:smooth], method: settings[:method],
+                              verbose: settings[:verbose], min: settings[:min], max: settings[:max],
+                              trusted: settings[:trusted], middle: settings[:middle]
       ).save(file_name_with_settings(image, settings, output_name, gif, output_folder))
+      if @overlay_image
+        pixel_sorted = Magick::Image.read(f.path).first
+        overlay = Magick::Image.read(@overlay_image).first
+
+        result = pixel_sorted.composite(overlay, Magick::CenterGravity, Magick::OverCompositeOp)
+        result.write(f.path)
+      end
     end
 
     ##
@@ -372,14 +381,5 @@ module PixelDreamer
         output(base_uri, input_name, output_name, options, gif, output_folder)
       end
     end
-
-    ##
-    # does not work needs to be recreated
-    # def convert(img)
-    #   image = ImageList.new(img)
-    #   image.write("#{@parent_path}#{@input_name}.png") { self.quality = 10 }
-    #   data = File.open("#{@parent_path}#{@input_name}.png", 'rb').read(9)
-    #   File.write(f = "#{@parent_path}#{@input_name}.png", File.read(f).gsub(/#{data}/,"\x89PNG\r\n\x1A\n"))
-    # end
   end
 end
