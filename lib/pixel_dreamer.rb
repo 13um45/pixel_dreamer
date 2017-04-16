@@ -18,8 +18,7 @@ module PixelDreamer
     include Magick
     attr_accessor :image, :overlay_image
 
-    def initialize(image, overlay_image = nil)
-
+    def initialize(image, overlay_image = nil, app = false)
       @image = prepare_image(image)
       @overlay_image = overlay_image
       @input_name = name_parser(image)
@@ -28,6 +27,15 @@ module PixelDreamer
       @sequence_frame_path = sequence_frame_path
       @image_path = image_path
       @output_folder = output_folder
+      @app = app
+    end
+
+    def show_sequence_folder
+      @sequence_folder
+    end
+
+    def show_output_folder
+      @output_folder
     end
 
     ##
@@ -40,10 +48,20 @@ module PixelDreamer
       end_image
     end
 
-    # pixel sorts on image
-    # by default blah blah blah
-    # to lazy to write the documentation rn
-    # read the documentation from the other methods to get an idea
+    # pixel sorts an image and outputs a text file with settings used
+    # once the image has been instantiated you can run this method without passing in any parameters
+    # by default it runs with these paramaters:
+    # { settings: DEFAULTS, output_name: nil, gif: false, output_folder: false }
+    # example:
+    # image.brute_sort_save_with_settings
+    # or with these parameters
+    #
+    # image.brute_sort_save_with_settings(settings: PixelDreamer::Constants::DEFAULTS, output_name: nil, gif: false, output_folder: false)
+    # or
+    # image.brute_sort_save_with_settings(settings: { reverse: false, vertical: false, diagonal: false,
+    #                                                 smooth: false, method: 'sum-rgb', verbose: false,
+    #                                                 min: Float::INFINITY, max: Float::INFINITY,
+    #                                                 trusted: false, middle: false })
     # also read the documentation for pxlsrt
     def brute_sort_save_with_settings(options = {})
       options[:image] ||= @image
@@ -100,12 +118,12 @@ module PixelDreamer
         settings[:min] = counter
         settings[:max] = counter * sequence_settings[:max_multiple]
         brute_sort_save_with_settings(image: @path, settings: settings, output_name: (output_name + "_#{image_number}"),
-                                       gif: true, output_folder: true)
+                                      gif: true, output_folder: true)
         puts "IMAGE #{image_number}/#{sequence_settings[:break_point] - sequence_settings[:counter]} COMPLETE"
         image_number += 1
         counter += sequence_settings[:increment]
       end
-      gif(options)
+      gif(options) if options[:gif]
     end
 
 
@@ -134,7 +152,7 @@ module PixelDreamer
 
       Constants::SETTINGS.each do |key, setting_hash|
         brute_sort_save_with_settings(image: image, settings: setting_hash, output_name: (output_name + "_#{key}"),
-                                       gif: gif, output_folder: true)
+                                      gif: gif, output_folder: true)
         puts "Image #{counter}/#{Constants::SETTINGS.length} complete."
         counter += 1
       end
@@ -162,7 +180,7 @@ module PixelDreamer
 
       options[:image_number].times do
         brute_sort_save_with_settings(image: image, settings: randomize_settings, output_name: (options[:output_name] + random_name),
-                                       gif: options[:gif], output_folder: true)
+                                      gif: options[:gif], output_folder: true)
       end
     end
 
@@ -205,15 +223,32 @@ module PixelDreamer
       options[:dither] = Constants::DITHER_DEFAULTS.merge(options[:dither])
       image_delay = options[:image_delay]
       dither = options[:dither]
-      animation = ImageList.new(*Dir["#{@sequence_folder}*.png"].sort_by { |x| x[/\d+/].to_i })
+
+      sorted_dir = Dir["#{@sequence_folder}*.png"].sort_by do |x|
+        b = x[/_(\d+)/]
+        if b.nil?
+          0
+        else
+          b.delete('_').to_i
+        end
+      end
+      animation = ImageList.new(*sorted_dir)
       animation.ticks_per_second=1000
       puts 'Got images.'
       animation.delay = options[:speed]
       animation[(image_delay[:image_to_delay] - 1)].delay = image_delay[:delay_length] if image_delay[:active]
       puts 'Creating GIF.'
       animation = dither(animation, dither[:number_of_colors]) if dither[:active]
+      animation = animation.deconstruct if @overlay_image && @app
       animation.write("#{@output_folder}#{options[:output_name]}.gif")
+
+      if (File.size("#{@output_folder}#{options[:output_name]}.gif") / 1000000) > 8 && @app
+        animation = dither(animation, 256)
+        animation.write("#{@output_folder}#{options[:output_name]}.gif")
+      end
+
       puts 'Complete.'
+      "#{@output_folder}#{options[:output_name]}.gif"
     end
 
     ##
@@ -255,15 +290,14 @@ module PixelDreamer
     end
 
     def dither(animation, number_of_colors)
-      animation.quantize(number_colors=number_of_colors,
-                         colorspace=RGBColorspace, dither=RiemersmaDitherMethod,
-                         tree_depth=0, measure_error=false)
+      animation.quantize(number_of_colors, Magick::RGBColorspace, true, 0, false)
     end
 
     def prepare(counter, compress)
       make_dir?
       path_selector(counter, compress, image)
       compress(image, @path) if compress
+      resize!(@path) if @app
     end
 
     ##
@@ -326,14 +360,27 @@ module PixelDreamer
 
     def path_selector(counter, compress, input)
       if compress
-        if counter > 1
-          @path = @image_path
-        else
-          @path = @sequence_frame_path
-        end
+        @path = if counter > 1
+                  @image_path
+                else
+                  @sequence_frame_path
+                end
       else
         @path = input
         FileUtils.copy(input, @sequence_frame_path)
+      end
+    end
+
+    def resize!(image_uri)
+      i = Image.read(image_uri).first
+      h = i.columns
+      w = i.rows
+      s = h * w
+
+      if s > 1500000
+        percentage = (1500000.0 / s).round(2)
+        resized = i.resize(percentage)
+        resized.write(image_uri)
       end
     end
 

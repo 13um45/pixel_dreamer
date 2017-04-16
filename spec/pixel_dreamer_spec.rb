@@ -138,8 +138,8 @@ describe PixelDreamer do
     end
     let(:input_uri) { 'support/test.png' }
     let(:test) { PixelDreamer::ImageDreamer.new(input_uri) }
-    subject(:output_with_name) { test.send(:file_name_with_settings, input_uri, options, output_name, false, false ) }
-    subject(:output_name_nil) { test.send(:file_name_with_settings, input_uri, options, nil, false, false ) }
+    subject(:output_with_name) { test.send(:file_name_with_settings, input_uri, options, output_name, false, false) }
+    subject(:output_name_nil) { test.send(:file_name_with_settings, input_uri, options, nil, false, false) }
 
     context 'when output_name exist' do
       it 'should return the output of the image' do
@@ -162,7 +162,7 @@ describe PixelDreamer do
     end
 
     it 'should create a gif' do
-      mock_image.gif({output_name: output_name})
+      mock_image.gif(output_name: output_name)
       expect(File).to exist('support/output/test/test_output.gif')
     end
   end
@@ -203,7 +203,7 @@ describe PixelDreamer do
     end
   end
 
-  describe :barrage  do
+  describe :barrage do
     it 'creates multiple images from teh sequence_setting hash' do
       mock_image.barrage
       expect(File).to exist('support/output/test/sequence/test_soft.png')
