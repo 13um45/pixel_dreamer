@@ -2,9 +2,9 @@
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
 Install RMagick and ImageMagick from here: [RMagick](https://github.com/rmagick/rmagick)
+
+Add this line to your application's Gemfile:
 
 ```ruby
 gem 'pixel_dreamer'
@@ -22,7 +22,7 @@ Or install it yourself as:
 
 ### ImageDreamer
 
-To use pixel dreamer you must first create a new `PixelDreamer::ImageDreamer` class
+To use pixel dreamer you must first create a new `PixelDreamer::ImageDreamer` instance
 to do this you must pass in the uri of the image you will be pixel sorting:
  ```ruby
  image = PixelDreamer::ImageDreamer.new('/uri/image.png')

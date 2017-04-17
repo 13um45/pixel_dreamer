@@ -67,6 +67,8 @@ module PixelDreamer
       options[:image] ||= @image
       options = Constants::BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS.merge(options)
       image = options[:image]
+      resize!(image) if options[:resize]
+      compress!(image) if options[:compress]
       settings = Constants::DEFAULTS.merge(options[:settings])
       output_name = options[:output_name]
       gif = options[:gif]
@@ -84,6 +86,7 @@ module PixelDreamer
         result = pixel_sorted.composite(overlay, Magick::CenterGravity, Magick::OverCompositeOp)
         result.write(f.path)
       end
+      f.path
     end
 
     ##
@@ -194,6 +197,17 @@ module PixelDreamer
                                    advpng: false, pngout: false, svgo: false)
       File.rename(image_optim.optimize_image(img), path)
       puts 'Image copied and compressed.'
+    end
+
+    ##
+    # compresses image in place
+    def compress!(img)
+      puts 'Compressing image.'
+      image_optim = ImageOptim.new(allow_lossy: true, verbose: false, skip_missing_workers: true, optipng: false,
+                                   pngcrush: false, pngquant: { allow_lossy: true },
+                                   advpng: false, pngout: false, svgo: false)
+      image_optim.optimize_image(img)
+      puts 'compressed.'
     end
 
     ##
@@ -378,8 +392,7 @@ module PixelDreamer
       s = h * w
 
       if s > 1500000
-        percentage = (1500000.0 / s).round(2)
-        resized = i.resize(percentage)
+        resized = i.change_geometry('@1500000') {|col, row, img| img.resize(col, row)}
         resized.write(image_uri)
       end
     end

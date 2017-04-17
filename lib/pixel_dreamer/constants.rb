@@ -48,7 +48,7 @@ module PixelDreamer
     BARRAGE_DEFAULTS = { gif: false, compress: true, speed: 84 }.freeze
 
     BRUTE_SORT_SAVE_WITH_SETTINGS_DEFAULTS = { settings: {}, output_name: nil, gif: false,
-                                               output_folder: false }.freeze
+                                               output_folder: false, resize: false, compress: false }.freeze
     IMAGE_DELAY_DEFAULTS = { active: false, image_to_delay: 1, delay_length: 1000 }.freeze
 
     DITHER_DEFAULTS = { active: false, number_of_colors: 200 }.freeze
