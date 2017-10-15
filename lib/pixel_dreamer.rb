@@ -221,7 +221,7 @@ module PixelDreamer
     # image.gif({speed: 42, dither: DITHER_DEFAULTS, image_delay: IMAGE_DELAY_DEFAULTS, output_name: 'image_gif'})
     #
     # or image.gif({speed: 42, dither: {active: false, number_of_colors: 200},
-    #                image_delay: {active: false, image_to_delay: 1, delay_length: 1000}, output_name: 'image_gif'})
+    #                image_delay: {active: false, image_to_delay: 1, delay_length: 1000}, patrol: true, output_name: 'image_gif'})
     #
     # speed is used to set the length of time for each frame of the gif, it defaults to milliseconds
     #   - 12 fps: length of frame = 84 ms
@@ -230,6 +230,7 @@ module PixelDreamer
     #   - 60 fps: length of frame = 17 ms
     # the dither hash used to set the dither settings
     # the image_delay hash is used to pause the sequence on an image for a set amount of time
+    # the patrol boolean is used to have the animation reverse at the end of it's cycle
     def gif(options = {})
       options[:output_name] ||= @input_name
       options = Constants::GIF_DEFAULTS.merge(options)
@@ -247,7 +248,8 @@ module PixelDreamer
         end
       end
       animation = ImageList.new(*sorted_dir)
-      animation.ticks_per_second=1000
+      animation.concat(patrol(animation)) unless options[:patrol].nil?
+      animation.ticks_per_second = 1000
       puts 'Got images.'
       animation.delay = options[:speed]
       animation[(image_delay[:image_to_delay] - 1)].delay = image_delay[:delay_length] if image_delay[:active]
@@ -273,6 +275,13 @@ module PixelDreamer
     end
 
     private
+
+    def patrol(animation)
+      animation_reversed = animation.copy.reverse
+      animation_reversed.delete_at(0)
+      animation_reversed.delete_at(animation_reversed.length - 1)
+      animation_reversed
+    end
 
     ##
     # checks if image is png, if it is, returns the uri passed else it converts to png
