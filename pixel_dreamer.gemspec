@@ -21,8 +21,8 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_runtime_dependency 'rmagick', '~> 2.16.0'
-  spec.add_runtime_dependency 'pxlsrt', '~> 1.8.2'
+  spec.add_runtime_dependency 'rmagick', '~> 2.16', '>= 2.16.0'
+  spec.add_runtime_dependency 'pxlsrt', '~> 1.8', '>= 1.8.2'
   spec.add_runtime_dependency 'image_optim', '~> 0.24.0'
   spec.add_runtime_dependency 'image_optim_pack', '~> 0.3.0.20161108'
 
