@@ -167,6 +167,7 @@ speed is used to set the length of time for each frame of the gif, it defaults t
    - 60 fps: length of frame = 17 ms
 the dither hash used to set the dither settings
 the image_delay hash is used to pause the sequence on an image for a set amount of time
+the patrol boolean is used to have the animation reverse at the end of it's cycle 
 
 #### uri_helper
 
